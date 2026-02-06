@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Карта — Дегунино</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Nunito',sans-serif;background:#f0f2f5}
+.header{background:linear-gradient(135deg,#1565C0 0%,#1565C0cc 100%);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.15);flex-wrap:wrap;gap:8px}
+.header h1{font-size:20px;font-weight:700}.header .badge{background:rgba(255,255,255,.2);padding:6px 14px;border-radius:20px;font-size:13px}
+.header .back{color:#fff;text-decoration:none;font-size:14px;opacity:.8}.header .back:hover{opacity:1}
+.container{display:flex;height:calc(100vh - 56px)}#map{flex:1;z-index:1}
+.sidebar{width:380px;background:#fff;overflow-y:auto;border-left:1px solid #ddd}
+.analytics{padding:16px;border-bottom:2px solid #e8e8e8}.analytics h3{font-size:13px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.sc{background:#f8f9fa;border-radius:8px;padding:10px;text-align:center}
+.sv{font-size:22px;font-weight:700;color:#1565C0}.sl{font-size:11px;color:#888;margin-top:2px}
+.rb{margin:8px 0}.rr{display:flex;align-items:center;margin:3px 0;font-size:12px}.rl{width:52px;color:#666}
+.rbar{flex:1;height:16px;background:#eee;border-radius:8px;overflow:hidden;margin:0 6px}.rf{height:100%;border-radius:8px}
+.rf.r3{background:linear-gradient(90deg,#2E7D32,#43A047)}.rf.r5{background:linear-gradient(90deg,#E65100,#FB8C00)}.rf.r10{background:linear-gradient(90deg,#C62828,#EF5350)}
+.rn{width:28px;text-align:right;font-weight:600;color:#333}
+.al{padding:0}.al h3{font-size:13px;color:#666;text-transform:uppercase;letter-spacing:1px;padding:12px 16px 8px}
+.ai{padding:9px 16px;border-bottom:1px solid #f0f0f0;cursor:pointer;transition:background .15s;display:flex;justify-content:space-between;align-items:center}
+.ai:hover{background:#f0f6ff}.ai.active{background:#e3edfa;border-left:3px solid #1565C0}
+.an{font-size:13px;font-weight:600;color:#333}.at{font-size:11px;color:#888;margin-top:1px}.ad{font-size:12px;font-weight:700;white-space:nowrap;margin-left:8px}
+.dn{color:#2E7D32}.dm{color:#E65100}.df{color:#C62828}
+.loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:24px 32px;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.25);z-index:10000;font-size:14px;text-align:center}
+.prog{margin-top:8px;height:6px;background:#eee;border-radius:3px;width:300px}.pbar{height:100%;background:#1565C0;border-radius:3px;transition:width .3s}
+.ls{margin-top:5px;font-size:12px;color:#888}.eb{background:#ffebee;color:#c62828;padding:2px 6px;border-radius:3px;font-size:10px;margin-top:2px;display:inline-block}
+@media(max-width:768px){.container{flex-direction:column-reverse}.sidebar{width:100%;height:40vh}#map{height:60vh}}
+</style></head><body>
+<div class="header"><div style="display:flex;align-items:center;gap:16px"><a href="index.html" class="back">← Все</a><h1>🏠 Дегунино</h1></div><div class="badge">📍 Москва, Дегунинская ул., д. 9А, к. 2</div></div>
+<div class="container"><div id="map"></div>
+<div class="sidebar">
+<div class="analytics"><h3>📊 Аналитика</h3>
+<div class="sg"><div class="sc"><div class="sv" id="a-total">55</div><div class="sl">Всего</div></div><div class="sc"><div class="sv" id="a-median">—</div><div class="sl">Медиана</div></div><div class="sc"><div class="sv" id="a-p80">—</div><div class="sl">80%</div></div><div class="sc"><div class="sv" id="a-max">—</div><div class="sl">Макс</div></div></div>
+<div class="rb"><div class="rr"><span class="rl">≤3км</span><div class="rbar"><div class="rf r3" id="bar3"></div></div><span class="rn" id="n3">—</span></div><div class="rr"><span class="rl">≤5км</span><div class="rbar"><div class="rf r5" id="bar5"></div></div><span class="rn" id="n5">—</span></div><div class="rr"><span class="rl">≤10км</span><div class="rbar"><div class="rf r10" id="bar10"></div></div><span class="rn" id="n10">—</span></div></div>
+</div>
+<div class="al"><h3>📋 Адреса (55)</h3><div id="addrContainer"></div></div>
+</div></div>
+<div class="loading" id="loading"><div>🗺 v19 — точные координаты (F12)</div><div class="prog"><div class="pbar" id="pbar"></div></div><div class="ls" id="ls">...</div></div>
+<script>
+const BASE_COORDS=[55.863885, 37.535111];const BRANCH_KEY='degunino';const ADDRESSES=[{"name": "Айрапетов Владислав", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.454", "dist": 0}, {"name": "Александрович Арина", "address": "г. Москва, ул. Фестивальная, д.39, к.1, кв.9", "dist": 0}, {"name": "Багдасарян Маргарита", "address": "г. Москва, ул. Большая Декабрьская, д.6, кв.23", "dist": 0}, {"name": "Белозерова Лия", "address": "г. Москва, ул. Тимирязевская, д.20, к.1, кв.74", "dist": 0}, {"name": "Буктаева Латифа", "address": "г. Москва, ул. Ивана Сусанина, д.8, к.1, кв.64", "dist": 0}, {"name": "Винокуров Василий", "address": "г. Москва, Ильменский пр-д, д.14, к.3, кв.719", "dist": 0}, {"name": "Висассанг Даниил", "address": "г. Москва, ул. Софьи Ковалевской, д.2, к.1, кв.106", "dist": 0}, {"name": "Гавриленко Анастасия", "address": "г. Химки, ул. Лавочкина, д.13, к.1, кв.172", "dist": 0}, {"name": "Гараба Арсений", "address": "г. Москва, п. Сосенское, ул. Александры Монаховой, д.95, к.1, кв.98", "dist": 0}, {"name": "Грабарчук Ева", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.460", "dist": 0}, {"name": "Дорофеев Михаил", "address": "г. Москва, ул. Костромская, д.6, к.2, кв.50", "dist": 0}, {"name": "Ермилова Елизавета", "address": "г. Москва, Ильменский пр-д, д.14, к.8, кв.593", "dist": 0}, {"name": "Ершова Елизавета", "address": "г. Москва, Ильменский пр-д, д.17, к.1, кв.97", "dist": 0}, {"name": "Жигулин Фёдор", "address": "г. Москва, ул. Пяловская, д.8, кв.170", "dist": 0}, {"name": "Зверева Ева", "address": "г. Москва, ш. Дмитровское, д.73Б, кв.632", "dist": 0}, {"name": "Ивановский Михаил", "address": "г. Москва, Ильменский пр-д, д.14, к.1, кв.486", "dist": 0}, {"name": "Илькевич Виктория", "address": "г. Москва, ул. Бакинская, д.17, к.2, кв.63", "dist": 0}, {"name": "Кириллова Алиса", "address": "г. Москва, ул. Новая, д.14, кв.270", "dist": 0}, {"name": "Климанов Андрей", "address": "г. Москва, Ильменский пр-д, д.14, к.8, кв.451", "dist": 0}, {"name": "Клюшников Константин", "address": "г. Москва, ул. Лобненская, д.13, к.2, кв.1351", "dist": 0}, {"name": "Кокоулин Александр", "address": "г. Москва, ш. Дмитровское, д.107А, к.1, кв.837", "dist": 0}, {"name": "Коновалов Марк", "address": "г. Москва, ул. Дегунинская, д.10, к.1, кв.107", "dist": 0}, {"name": "Кузнецова Ева", "address": "г. Москва, Ильменский пр-д, д.17, к.1, кв.211", "dist": 0}, {"name": "Лазарев Станислав", "address": "г. Москва, ал. Берёзовая, д.17, к.2, кв.416", "dist": 0}, {"name": "Лоцман Лев", "address": "г. Москва, ш. Коровинское, д.5, к.1, кв.29", "dist": 0}, {"name": "Мадзаева Амалия", "address": "г. Москва, 8-я ул. Текстильщиков, д.7а, кв.12", "dist": 0}, {"name": "Макаов Михаил", "address": "г. Москва, ш. Дмитровское, д.107, к.2, кв.641", "dist": 0}, {"name": "Мамедов Давид", "address": "г. Москва, ш. Ленинградское, д.69, к.2, кв.607", "dist": 0}, {"name": "Масланов Даниил", "address": "г. Москва, Ильменский пр-д, д.14, к.8, кв.1020", "dist": 0}, {"name": "Митрофанова Алекса", "address": "г. Москва, ул. Бориса Жигуленкова, д.6, кв.4", "dist": 0}, {"name": "Михеев Дмитрий", "address": "г. Одинцово, ул. Чикина, д.12, кв.165", "dist": 0}, {"name": "Муромцева Полина", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.437", "dist": 0}, {"name": "Негродов Герман", "address": "г. Москва, ул. Маршала Катукова, д.13, к.2, кв.29", "dist": 0}, {"name": "Неизвестный (НО-22)", "address": "г. Москва, ул. Ангарская, д.26, к.1, кв.230", "dist": 0}, {"name": "Нехаев Александр", "address": "г. Москва, Ильменский пр-д, д.14, к.3, кв.601", "dist": 0}, {"name": "Нехаев Иван", "address": "г. Москва, ул. Дегунинская, д.10, к.1, кв.237", "dist": 0}, {"name": "Никитина Есения", "address": "г. Москва, Ильменский пр-д, д.14, к.3, кв.296", "dist": 0}, {"name": "Орленко Данила", "address": "г. Сергиев Посад, пгт. Богородское, д.17, кв.14", "dist": 0}, {"name": "Осташевская Аврора", "address": "г. Москва, ул. Дегунинская, д.10, к.1, кв.122", "dist": 0}, {"name": "Петров Григорий", "address": "г. Мытищи, д. Грибки, ул. Складская, д.9", "dist": 0}, {"name": "Петров Никита", "address": "г. Москва, ул. Дегунинская, д.7, кв.82", "dist": 0}, {"name": "Петрова Алиса", "address": "г. Москва, ул. Пяловская, д.8, кв.169", "dist": 0}, {"name": "Прибыткова Алиса", "address": "г. Москва, ул. Дубнинская, д.40А, к.4, кв.91", "dist": 0}, {"name": "Прохорова Алиса", "address": "г. Москва, Ильменский пр-д, д.14, к.3, кв.1452", "dist": 0}, {"name": "Разумов Александр", "address": "г. Москва, ул. Беломорская, д.18А, к.2, кв.103", "dist": 0}, {"name": "Ребрий Евгений", "address": "г. Москва, ул. Дегунинская, д.7, кв.49", "dist": 0}, {"name": "Савин Тимофей", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.494", "dist": 0}, {"name": "Семевич Алиса", "address": "г. Москва, Ильменский пр-д, д.14, к.1, кв.485", "dist": 0}, {"name": "Семчук Кристина", "address": "г. Москва, ул. Ангарская, д.67, к.3, кв.110", "dist": 0}, {"name": "Сергиенко Мирон", "address": "г. Москва, ш. Дмитровское, д.107, к.1, кв.456", "dist": 0}, {"name": "Сулейманова Ясмина", "address": "г. Москва, ул. Ангарская, д.67, к.3, кв.20", "dist": 0}, {"name": "Трифонов Артём", "address": "г. Москва, ул. Пяловская, д.10, кв.279", "dist": 0}, {"name": "Тухфетуллин Амир", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.466", "dist": 0}, {"name": "Юдина София", "address": "г. Москва, ул. Лобненская, д.15, к.1, кв.409", "dist": 0}, {"name": "Яцкив Артём", "address": "г. Москва, ул. Дегунинская, д.7, кв.47", "dist": 0}];
+console.log('=== Rybakov Maps v19 ===');
+console.log('Branch:', BRANCH_KEY, '| Total:', ADDRESSES.length);
+
+const DADATA_KEY='d065d9bbc5abd65bbe173c43fb3f71802e115614';
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+// ТОЧНЫЕ координаты от пользователя
+const MANUAL_COORDS = {
+  // 1. Одинцовский р-н, р.п. Заречье, ул. Медовая, д. 4
+  'заречье медовая': [55.684852, 37.396519],
+  'медовая': [55.684852, 37.396519],
+  
+  // 2. пос. Сосенское, кв-л 28, д. 2, к. 5
+  'кв-л 28': [55.603933, 37.415101],
+  'кв-л28': [55.603933, 37.415101],
+  'квартал 28': [55.603933, 37.415101],
+  
+  // 3. Сиреневый тупик, д. 4а (Троицк)
+  'сиреневый тупик': [55.581284, 37.406411],
+  
+  // 5. д. Сосенки, ЖК Дубровка, ул. Ореховая, д. 6
+  'сосенки дубровка': [55.571293, 37.447831],
+  'сосенки ореховая': [55.571293, 37.447831],
+  'дубровка ореховая': [55.571293, 37.447831],
+  
+  // 6. пос. Благодать, ул. Генерала Трошева, д. 4
+  'благодать': [55.564648, 37.342607],
+  'генерала трошева': [55.564648, 37.342607],
+  
+  // 7. Калужское ш., ул. Ясеневая, д. 1
+  'калужское ясеневая': [55.567303, 37.442984],
+  'калужское ш ясеневая': [55.567303, 37.442984],
+  
+  // 8. г. Апрелевка, ул. Островского, д. 36
+  'апрелевка островского': [55.541229, 37.080710],
+  
+  // 10. п. Заречье, ул. Весенняя, д. 2, к. 3
+  'заречье весенняя 2': [55.696897, 37.399646],
+  
+  // 11. п. Заречье, Мещерский бульвар, д. 2
+  'заречье мещерский': [55.682620, 37.393160],
+  'мещерский бульвар': [55.682620, 37.393160],
+  
+  // 12. п. Заречье, ул. Весенняя, д. 1
+  'заречье весенняя 1': [55.693556, 37.398963],
+  
+  // 14. ул. Академика Семенова, домовл. 83
+  'академика семенова 83': [55.539069, 37.487555],
+  'академика семенова домовл': [55.539069, 37.487555],
+  
+  // 15. ул. Волочаевская, д. 18
+  'волочаевская 18': [55.542468, 37.049995],
+  'волочаевская': [55.542468, 37.049995],
+};
+
+function checkManualCoords(addr) {
+  const a = addr.toLowerCase();
+  
+  // Специальная проверка для Заречье + Весенняя + номер дома
+  if (/заречье/i.test(a) && /весенняя/i.test(a)) {
+    if (/д\.?\s*2/i.test(a) || /д\s*2/i.test(a)) {
+      console.log('  🎯 Manual: заречье весенняя 2');
+      return { coords: [55.696897, 37.399646], resolved: 'Manual: Заречье, Весенняя, 2', qc: 0 };
+    }
+    if (/д\.?\s*1/i.test(a) || /д\s*1/i.test(a)) {
+      console.log('  🎯 Manual: заречье весенняя 1');
+      return { coords: [55.693556, 37.398963], resolved: 'Manual: Заречье, Весенняя, 1', qc: 0 };
+    }
+  }
+  
+  // Проверка по паттернам
+  for (const [pattern, coords] of Object.entries(MANUAL_COORDS)) {
+    const words = pattern.split(' ');
+    if (words.every(w => a.includes(w))) {
+      console.log('  🎯 Manual:', pattern);
+      return { coords: coords, resolved: 'Manual: ' + pattern, qc: 0 };
+    }
+  }
+  return null;
+}
+
+function cleanAddress(addr) {
+  let c = addr.replace(/\u00a0/g, ' ');
+  c = c.replace(/,(?=\S)/g, ', ');
+  c = c.replace(/\.(?=[а-яА-Я])/g, '. ');
+  
+  c = c.replace(/[,\s]+кв(?:артира)?\.?\s*[\d\/_\-а-яА-Яa-zA-Z]*\s*$/gi, '');
+  c = c.replace(/[,\s]+жил\.?\s*пом\.?\s*[\d\/_\-а-яА-Яa-zA-Z]*\s*$/gi, '');
+  c = c.replace(/[,\s]+секция\s*\d*\s*$/gi, '');
+  c = c.replace(/[,\s]+\d+\s*подъезд\s*$/gi, '');
+  
+  c = c.replace(/[,\s]*(?:пос\.?|п\.?|поселение)\s*Московск(?:ий|ое)[,\s]*/gi, ', ');
+  c = c.replace(/[,\s]*(?:пос\.?|п\.?|поселение)\s*(?:Внуковское|Сосенское|Филимонковское|Филимоновское|Марушкинское|Краснопахорское|Кокошкино|Мосрентген|Первомайское)[,\s]*/gi, ', ');
+  c = c.replace(/посёлок городского типа\s*/gi, 'п. ');
+  c = c.replace(/поселение\s+[А-ЯЁа-яё]+[,\s]*/gi, ', ');
+  c = c.replace(/вн\.\s*тер\.\s*г\.\s*/gi, '');
+  
+  c = c.replace(/нп\s+Деревня\s*/gi, 'д. ');
+  c = c.replace(/тер\.\s*Поселок\s*/gi, 'п. ');
+  c = c.replace(/[,\s]*тер\.\s*СНТ\s+[А-ЯЁа-яё]+[,\s]*/gi, ', ');
+  c = c.replace(/р\.\s*п\.\s*/gi, 'п. ');
+  
+  c = c.replace(/[,\s]*(?:ЖК|ж\\?\/k)\s+[А-ЯЁа-яё]+\s*[,\s]*/gi, ', ');
+  c = c.replace(/[,\s]*КП\s+[А-ЯЁа-яё]+\s*[,\s]*/gi, ', ');
+  
+  c = c.replace(/домовл\.\s*/gi, 'д. ');
+  c = c.replace(/двлд\.\s*/gi, 'д. ');
+  c = c.replace(/кв-л\s*/gi, 'квартал ');
+  c = c.replace(/КВ-Л\s*/gi, 'квартал ');
+  c = c.replace(/ВЛД\.\s*/gi, 'влд. ');
+  c = c.replace(/\bвл\.\s*/gi, 'влд. ');
+  c = c.replace(/р-на\s*/gi, 'р-н ');
+  
+  c = c.replace(/ул\.\s*([А-ЯЁа-яё]+)\s+пр\./gi, '$1 пр.');
+  c = c.replace(/ул\.\s*([А-ЯЁа-яё]+)\s+пр-д/gi, '$1 пр-д');
+  c = c.replace(/ул\.\s*([А-ЯЁа-яё]+)\s+шоссе/gi, '$1 шоссе');
+  c = c.replace(/ул\.\s*([А-ЯЁа-яё]+)\s+бульвар/gi, '$1 бульвар');
+  c = c.replace(/ул\.\s*Км\.\s*/gi, '');
+  
+  c = c.replace(/гор\.\s*Москва/gi, 'г. Москва');
+  
+  c = c.replace(/,\s*,+/g, ',').replace(/\s+/g, ' ').trim();
+  c = c.replace(/^[,\s]+|[,\s]+$/g, '');
+  
+  return c;
+}
+
+function isValidCoords(lat, lon) {
+  return lat > 54.5 && lat < 57 && lon > 35.5 && lon < 40;
+}
+
+async function callDadata(query, withLocations = false) {
+  try {
+    console.log('  📡', query.substring(0,60));
+    
+    const body = { query: query, count: 1 };
+    if (withLocations) {
+      body.locations = [{ "kladr_id": "77" }, { "kladr_id": "50" }];
+    }
+    
+    const r = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Token ' + DADATA_KEY },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) { console.log('  ❌ HTTP:', r.status); return null; }
+    const d = await r.json();
+    if (d.suggestions && d.suggestions.length > 0) {
+      const s = d.suggestions[0];
+      const data = s.data;
+      const lat = parseFloat(data.geo_lat);
+      const lon = parseFloat(data.geo_lon);
+      const qc = data.qc_geo || 0;
+      console.log('  📍', s.value.substring(0,50), '| qc:', qc);
+      if (lat && lon && isValidCoords(lat, lon)) {
+        return { coords: [lat, lon], resolved: s.value, qc: qc };
+      } else { console.log('  ⚠️ bad coords'); }
+    } else { console.log('  ❌ No suggestions'); }
+  } catch(e) { console.error('  ❌', e); }
+  return null;
+}
+
+function applySpecialRules(addr) {
+  let c = addr;
+  if (/павшинский/i.test(c) && !/красногорск/i.test(c)) {
+    c = 'Красногорск, ' + c.replace(/^Москва,?\s*/i, '');
+  }
+  if (/п\.\s*Заречье/i.test(c) && !/одинцов/i.test(c)) {
+    c = c.replace(/п\.\s*Заречье/i, 'Одинцовский район, п. Заречье');
+  }
+  if (/Александры Монаховой/i.test(c)) {
+    c = c.replace(/[,\s]*п\.\s*Сосенское[,\s]*/gi, ', ');
+  }
+  if (/понизовье/i.test(c) && !/коммунарк/i.test(c)) {
+    c = c.replace(/г\.\s*Москва/i, 'Москва, Коммунарка');
+  }
+  return c;
+}
+
+async function geocode(address) {
+  console.log('🔍', address.substring(0,55));
+  let cleaned = cleanAddress(address);
+  console.log('  🧹', cleaned.substring(0,55));
+  
+  // Попытка 0: СНАЧАЛА проверяем ручные координаты
+  let result = checkManualCoords(address);
+  if (result) return result;
+  result = checkManualCoords(cleaned);
+  if (result) return result;
+  
+  // Попытка 1: DaData
+  result = await callDadata(cleaned, true);
+  if (result && result.qc <= 1) return result;
+  
+  // Попытка 2: специальные правила
+  const special = applySpecialRules(cleaned);
+  if (special !== cleaned) {
+    console.log('  🔄 Special:', special.substring(0,50));
+    result = await callDadata(special, true);
+    if (result && result.qc <= 1) return result;
+  }
+  
+  // Попытка 3: +Москва
+  if (!/москв/i.test(cleaned)) {
+    console.log('  🔄 +Москва');
+    result = await callDadata('Москва, ' + cleaned, true);
+    if (result && result.qc <= 1) return result;
+  }
+  
+  // Попытка 4: упростить
+  let simple = cleaned
+    .replace(/[,\s]*(?:округ\s+)?(?:ЗАО|ВАО|САО|ЮАО|СВАО|СЗАО|ЮЗАО|ЮВАО)\s*/gi, ', ')
+    .replace(/[,\s]*р-н\s+[А-ЯЁа-яё\-]+[,\s]*/gi, ', ')
+    .replace(/[,\s]*Северо-Восточный\s+АО[,\s]*/gi, ', ')
+    .replace(/,\s*,+/g, ',').replace(/^[,\s]+|[,\s]+$/g, '');
+  
+  if (simple !== cleaned) {
+    console.log('  🔄 Simplified');
+    result = await callDadata(simple, true);
+    if (result && result.qc <= 1) return result;
+  }
+  
+  // Последняя попытка: вернуть любой результат от DaData
+  result = await callDadata(cleaned, true);
+  if (result) return result;
+  
+  console.log('  ❌ FAILED');
+  return null;
+}
+
+function getCacheKey() { return 'geo_v19_' + BRANCH_KEY; }
+function loadCache() { try { return JSON.parse(localStorage.getItem(getCacheKey())) || {}; } catch(e) { return {}; } }
+function saveCache(cache) { try { localStorage.setItem(getCacheKey(), JSON.stringify(cache)); } catch(e) {} }
+
+function haversine(c1,c2) {
+  const R=6371, toR=Math.PI/180;
+  const dLat=(c2[0]-c1[0])*toR, dLon=(c2[1]-c1[1])*toR;
+  const a=Math.sin(dLat/2)**2 + Math.cos(c1[0]*toR)*Math.cos(c2[0]*toR)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function distClass(d) { return d<=3?'dn':d<=15?'dm':'df'; }
+function distColor(d) { return d<=2?'#2E7D32':d<=5?'#43A047':d<=10?'#FB8C00':d<=15?'#E65100':'#C62828'; }
+function createIcon(color) {
+  return L.divIcon({ className:'', html:'<div style="width:14px;height:14px;background:'+color+';border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>', iconSize:[14,14],iconAnchor:[7,7] });
+}
+
+function updateAnalytics(dists){const n=dists.length;if(!n)return;dists.sort((a,b)=>a-b);const med=n%2?dists[Math.floor(n/2)]:(dists[n/2-1]+dists[n/2])/2;const p80=dists[Math.min(Math.floor(n*.8),n-1)];const mx=dists[n-1];const le3=dists.filter(d=>d<=3).length,le5=dists.filter(d=>d<=5).length,le10=dists.filter(d=>d<=10).length;document.getElementById('a-median').textContent=med.toFixed(1);document.getElementById('a-p80').textContent=p80.toFixed(1);document.getElementById('a-max').textContent=mx.toFixed(1);document.getElementById('n3').textContent=le3;document.getElementById('n5').textContent=le5;document.getElementById('n10').textContent=le10;document.getElementById('bar3').style.width=Math.round(le3/n*100)+'%';document.getElementById('bar5').style.width=Math.round(le5/n*100)+'%';document.getElementById('bar10').style.width=Math.round(le10/n*100)+'%';}
+(async function(){const ls=document.getElementById('ls'),pb=document.getElementById('pbar'),ld=document.getElementById('loading');const container=document.getElementById('addrContainer');const cache=loadCache();
+console.log('Cache:', Object.keys(cache).length);
+const map=L.map('map').setView(BASE_COORDS,12);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19}).addTo(map);
+L.marker(BASE_COORDS,{icon:L.divIcon({className:'',html:'<div style="width:28px;height:28px;background:#C62828;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center"><div style="width:8px;height:8px;background:#fff;border-radius:50%"></div></div>',iconSize:[28,28],iconAnchor:[14,14]}),zIndexOffset:1000}).addTo(map).bindPopup('<b>🏫 Дегунино</b><br>Москва, Дегунинская ул., д. 9А, к. 2');
+ADDRESSES.forEach((item,i)=>{const div=document.createElement('div');div.className='ai';div.id='a-'+i;div.innerHTML='<div style="flex:1;min-width:0"><div class="an">'+item.name+'</div><div class="at" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+item.address+'</div></div><div class="ad dm" id="d-'+i+'">—</div>';container.appendChild(div);});
+const total=ADDRESSES.length;let found=0,failed=0,fromCache=0,manual=0;const realDists=[],allCoords=[BASE_COORDS];
+for(let i=0;i<total;i++){const item=ADDRESSES[i];const cacheKey=cleanAddress(item.address);let result=null;
+if(cache[cacheKey]&&cache[cacheKey].coords&&isValidCoords(cache[cacheKey].coords[0],cache[cacheKey].coords[1])){result=cache[cacheKey];fromCache++;console.log('💾', item.name);}
+else{result=await geocode(item.address);if(result)cache[cacheKey]=result;await delay(300);}
+if(result&&result.coords){const coords=result.coords;const dist=haversine(BASE_COORDS,coords);const rd=Math.round(dist*10)/10;realDists.push(rd);allCoords.push(coords);
+document.getElementById('d-'+i).textContent=rd.toFixed(1)+' км';document.getElementById('d-'+i).className='ad '+distClass(rd);
+const isManual = result.resolved && result.resolved.startsWith('Manual');
+if(isManual) manual++;
+const mk=L.marker(coords,{icon:createIcon(distColor(rd))}).addTo(map).bindPopup('<b>'+item.name+'</b><br>'+item.address+'<br>📏 '+rd.toFixed(1)+' км');found++;
+const div=document.getElementById('a-'+i);(function(c,m,d){d.onclick=function(){map.setView(c,16);m.openPopup();document.querySelectorAll('.ai').forEach(el=>el.classList.remove('active'));d.classList.add('active');}})(coords,mk,div);}
+else{failed++;document.getElementById('a-'+i).innerHTML+='<span class="eb">⚠ не найден</span>';}
+ls.textContent=(i+1)+'/'+total+' ✅'+found+(manual?' 🎯'+manual:'')+(fromCache?' 💾'+fromCache:'')+(failed?' ❌'+failed:'');pb.style.width=((i+1)/total*100)+'%';if((i+1)%10===0)saveCache(cache);}
+saveCache(cache);updateAnalytics(realDists);
+console.log('=== Done! ✅', found, '🎯', manual, '❌', failed, '===');
+ls.textContent='✅'+found+'/'+total+(failed?' ❌'+failed:'');setTimeout(()=>ld.style.display='none',800);
+if(allCoords.length>1)map.fitBounds(L.latLngBounds(allCoords.map(c=>L.latLng(c[0],c[1]))),{padding:[30,30]});})();
+</script></body></html>
