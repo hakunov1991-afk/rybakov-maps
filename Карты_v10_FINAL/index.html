@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Rybakov PlaySchool — Карты</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Nunito',sans-serif;background:#f0f2f5;min-height:100vh}
+.hero{background:linear-gradient(135deg,#1a237e,#283593,#3949ab);color:#fff;padding:48px 24px 40px;text-align:center}
+.hero h1{font-size:32px;font-weight:800;margin-bottom:8px}.hero p{font-size:16px;opacity:.8}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;padding:32px 24px;max-width:1200px;margin:0 auto}
+.card{background:#fff;border-radius:16px;padding:28px;text-decoration:none;color:#333;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:all .2s;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;text-align:center}
+.card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.12);border-color:var(--accent)}
+.card-icon{font-size:48px;margin-bottom:12px}.card-name{font-size:22px;font-weight:700;color:var(--accent)}
+.card-addr{font-size:13px;color:#888;margin:6px 0 12px}.card-count{font-size:18px;font-weight:700;margin-bottom:16px}
+.card-btn{background:var(--accent);color:#fff;padding:10px 24px;border-radius:24px;font-size:14px;font-weight:600}
+.footer{text-align:center;padding:24px;color:#aaa;font-size:12px}
+</style></head><body>
+<div class="hero"><h1>🗺 Карты филиалов</h1><p>Rybakov PlaySchool — интерактивные карты</p></div>
+<div class="grid">
+    <a href="botanica.html" class="card" style="--accent:#2E7D32">
+      <div class="card-icon">🌿</div>
+      <div class="card-name">Ботанический сад</div>
+      <div class="card-addr">Москва, ул. Сельскохозяйственная, д. 38</div>
+      <div class="card-count">97 детей</div>
+      <div class="card-btn">Открыть карту →</div>
+    </a>
+    <a href="degunino.html" class="card" style="--accent:#1565C0">
+      <div class="card-icon">🏠</div>
+      <div class="card-name">Дегунино</div>
+      <div class="card-addr">Москва, Дегунинская ул., д. 9А, к. 2</div>
+      <div class="card-count">55 детей</div>
+      <div class="card-btn">Открыть карту →</div>
+    </a>
+    <a href="kutuza.html" class="card" style="--accent:#6A1B9A">
+      <div class="card-icon">🏰</div>
+      <div class="card-name">Кутуза</div>
+      <div class="card-addr">Москва, ул. Гжатская, д. 5, к. 4</div>
+      <div class="card-count">138 детей</div>
+      <div class="card-btn">Открыть карту →</div>
+    </a>
+    <a href="salaryevo.html" class="card" style="--accent:#E65100">
+      <div class="card-icon">🌳</div>
+      <div class="card-name">Саларьево</div>
+      <div class="card-addr">Москва, ул. Саларьевская, д. 12, стр. 1</div>
+      <div class="card-count">139 детей</div>
+      <div class="card-btn">Открыть карту →</div>
+    </a></div>
+<div class="footer">Первая загрузка ~40-90 сек, далее мгновенно из кеша</div>
+</body></html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Карта — Дегунино</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Nunito',sans-serif;background:#f0f2f5}
+.header{background:linear-gradient(135deg,#1565C0 0%,#1565C0cc 100%);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.15);flex-wrap:wrap;gap:8px;position:relative;z-index:1000}
+.header h1{font-size:20px;font-weight:700}
+.header .badge{background:rgba(255,255,255,.2);padding:6px 14px;border-radius:20px;font-size:13px}
+.header .back{color:#fff;text-decoration:none;font-size:14px;opacity:.8}.header .back:hover{opacity:1}
+.container{display:flex;height:calc(100vh - 56px)}
+#map{flex:1;z-index:1}
+.sidebar{width:380px;background:#fff;overflow-y:auto;border-left:1px solid #ddd;z-index:2}
+.analytics{padding:16px;border-bottom:2px solid #e8e8e8}
+.analytics h3{font-size:13px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.sc{background:#f8f9fa;border-radius:8px;padding:10px;text-align:center}
+.sv{font-size:22px;font-weight:700;color:#1565C0}.sl{font-size:11px;color:#888;margin-top:2px}
+.rb{margin:8px 0}.rr{display:flex;align-items:center;margin:3px 0;font-size:12px}
+.rl{width:52px;color:#666}.rbar{flex:1;height:16px;background:#eee;border-radius:8px;overflow:hidden;margin:0 6px}
+.rf{height:100%;border-radius:8px}.rf.r3{background:linear-gradient(90deg,#2E7D32,#43A047)}.rf.r5{background:linear-gradient(90deg,#E65100,#FB8C00)}.rf.r10{background:linear-gradient(90deg,#C62828,#EF5350)}
+.rn{width:28px;text-align:right;font-weight:600;color:#333}
+.gb{margin:8px 0}.gbi{display:flex;height:22px;border-radius:11px;overflow:hidden}
+.gm{background:#1565C0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600}
+.go{background:#1565C088;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600}
+.gl{display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:3px}
+.tb{margin-top:8px}.tb h4{font-size:12px;color:#888;margin-bottom:4px}
+.ti{font-size:12px;padding:3px 0;border-bottom:1px solid #f0f0f0}
+.tc{display:inline-block;background:#1565C0;color:#fff;border-radius:10px;width:22px;height:22px;text-align:center;line-height:22px;font-size:11px;font-weight:700;margin-right:5px}
+.al{padding:0}.al h3{font-size:13px;color:#666;text-transform:uppercase;letter-spacing:1px;padding:12px 16px 8px}
+.ai{padding:9px 16px;border-bottom:1px solid #f0f0f0;cursor:pointer;transition:background .15s;display:flex;justify-content:space-between;align-items:center}
+.ai:hover{background:#f0f6ff}.ai.active{background:#e3edfa;border-left:3px solid #1565C0}
+.an{font-size:13px;font-weight:600;color:#333}.at{font-size:11px;color:#888;margin-top:1px}
+.ad{font-size:12px;font-weight:700;white-space:nowrap;margin-left:8px}
+.dn{color:#2E7D32}.dm{color:#E65100}.df{color:#C62828}
+.loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:24px 32px;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.25);z-index:10000;font-size:14px;text-align:center}
+.prog{margin-top:8px;height:6px;background:#eee;border-radius:3px;width:300px}
+.pbar{height:100%;background:#1565C0;border-radius:3px;transition:width .3s}
+.ls{margin-top:5px;font-size:12px;color:#888}
+.eb{background:#ffebee;color:#c62828;padding:2px 6px;border-radius:3px;font-size:10px;margin-top:2px;display:inline-block}
+@media(max-width:768px){.container{flex-direction:column-reverse}.sidebar{width:100%;height:40vh}#map{height:60vh}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:16px">
+    <a href="index.html" class="back">← Все филиалы</a>
+    <h1>🏠 Дегунино</h1>
+  </div>
+  <div class="badge">📍 Москва, Дегунинская ул., д. 9А, к. 2</div>
+</div>
+<div class="container">
+  <div id="map"></div>
+  <div class="sidebar">
+    <div class="analytics">
+      <h3>📊 Аналитика</h3>
+      <div class="sg">
+        <div class="sc"><div class="sv" id="a-total">55</div><div class="sl">Всего детей</div></div>
+        <div class="sc"><div class="sv" id="a-median">—</div><div class="sl">Медиана (км)</div></div>
+        <div class="sc"><div class="sv" id="a-p80">—</div><div class="sl">80% в радиусе (км)</div></div>
+        <div class="sc"><div class="sv" id="a-max">—</div><div class="sl">Макс (км)</div></div>
+      </div>
+      <div class="rb">
+        <div class="rr"><span class="rl">≤ 3 км</span><div class="rbar"><div class="rf r3" id="bar3" style="width:0%"></div></div><span class="rn" id="n3">—</span></div>
+        <div class="rr"><span class="rl">≤ 5 км</span><div class="rbar"><div class="rf r5" id="bar5" style="width:0%"></div></div><span class="rn" id="n5">—</span></div>
+        <div class="rr"><span class="rl">≤ 10 км</span><div class="rbar"><div class="rf r10" id="bar10" style="width:0%"></div></div><span class="rn" id="n10">—</span></div>
+      </div>
+      <div class="gb" id="geoBar" style="display:none">
+        <div class="gbi">
+          <div class="gm" id="gm" style="width:50%">Москва 0%</div>
+          <div class="go" id="go" style="width:50%">МО 0%</div>
+        </div>
+        <div class="gl"><span id="glm">Москва: 0</span><span id="glo">МО: 0</span></div>
+      </div>
+      <div class="tb" id="topAddrs"><h4>🏆 Топ адреса</h4></div>
+    </div>
+    <div class="al">
+      <h3>📋 Все адреса (55)</h3>
+      <div id="addrContainer"></div>
+    </div>
+  </div>
+</div>
+<div class="loading" id="loading">
+  <div>🗺 Загрузка карты...</div>
+  <div class="prog"><div class="pbar" id="pbar" style="width:0%"></div></div>
+  <div class="ls" id="ls">Инициализация...</div>
+</div>
+
+<script>
+const BASE_COORDS=[55.863885, 37.535111];
+const BRANCH_KEY='degunino';
+const ADDRESSES=[{"name": "Айрапетов Владислав", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.454", "dist": 0}, {"name": "Александрович Арина", "address": "г. Москва, ул. Фестивальная, д.39, к.1, кв.9", "dist": 0}, {"name": "Багдасарян Маргарита", "address": "г. Москва, ул. Большая Декабрьская, д.6, кв.23", "dist": 0}, {"name": "Белозерова Лия", "address": "г. Москва, ул. Тимирязевская, д.20, к.1, кв.74", "dist": 0}, {"name": "Буктаева Латифа", "address": "г. Москва, ул. Ивана Сусанина, д.8, к.1, кв.64", "dist": 0}, {"name": "Винокуров Василий", "address": "г. Москва, Ильменский пр-д, д.14, к.3, кв.719", "dist": 0}, {"name": "Висассанг Даниил", "address": "г. Москва, ул. Софьи Ковалевской, д.2, к.1, кв.106", "dist": 0}, {"name": "Гавриленко Анастасия", "address": "г. Химки, ул. Лавочкина, д.13, к.1, кв.172", "dist": 0}, {"name": "Гараба Арсений", "address": "г. Москва, п. Сосенское, ул. Александры Монаховой, д.95, к.1, кв.98", "dist": 0}, {"name": "Грабарчук Ева", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.460", "dist": 0}, {"name": "Дорофеев Михаил", "address": "г. Москва, ул. Костромская, д.6, к.2, кв.50", "dist": 0}, {"name": "Ермилова Елизавета", "address": "г. Москва, Ильменский пр-д, д.14, к.8, кв.593", "dist": 0}, {"name": "Ершова Елизавета", "address": "г. Москва, Ильменский пр-д, д.17, к.1, кв.97", "dist": 0}, {"name": "Жигулин Фёдор", "address": "г. Москва, ул. Пяловская, д.8, кв.170", "dist": 0}, {"name": "Зверева Ева", "address": "г. Москва, ш. Дмитровское, д.73Б, кв.632", "dist": 0}, {"name": "Ивановский Михаил", "address": "г. Москва, Ильменский пр-д, д.14, к.1, кв.486", "dist": 0}, {"name": "Илькевич Виктория", "address": "г. Москва, ул. Бакинская, д.17, к.2, кв.63", "dist": 0}, {"name": "Кириллова Алиса", "address": "г. Москва, ул. Новая, д.14, кв.270", "dist": 0}, {"name": "Климанов Андрей", "address": "г. Москва, Ильменский пр-д, д.14, к.8, кв.451", "dist": 0}, {"name": "Клюшников Константин", "address": "г. Москва, ул. Лобненская, д.13, к.2, кв.1351", "dist": 0}, {"name": "Кокоулин Александр", "address": "г. Москва, ш. Дмитровское, д.107А, к.1, кв.837", "dist": 0}, {"name": "Коновалов Марк", "address": "г. Москва, ул. Дегунинская, д.10, к.1, кв.107", "dist": 0}, {"name": "Кузнецова Ева", "address": "г. Москва, Ильменский пр-д, д.17, к.1, кв.211", "dist": 0}, {"name": "Лазарев Станислав", "address": "г. Москва, ал. Берёзовая, д.17, к.2, кв.416", "dist": 0}, {"name": "Лоцман Лев", "address": "г. Москва, ш. Коровинское, д.5, к.1, кв.29", "dist": 0}, {"name": "Мадзаева Амалия", "address": "г. Москва, 8-я ул. Текстильщиков, д.7а, кв.12", "dist": 0}, {"name": "Макаов Михаил", "address": "г. Москва, ш. Дмитровское, д.107, к.2, кв.641", "dist": 0}, {"name": "Мамедов Давид", "address": "г. Москва, ш. Ленинградское, д.69, к.2, кв.607", "dist": 0}, {"name": "Масланов Даниил", "address": "г. Москва, Ильменский пр-д, д.14, к.8, кв.1020", "dist": 0}, {"name": "Митрофанова Алекса", "address": "г. Москва, ул. Бориса Жигуленкова, д.6, кв.4", "dist": 0}, {"name": "Михеев Дмитрий", "address": "г. Одинцово, ул. Чикина, д.12, кв.165", "dist": 0}, {"name": "Муромцева Полина", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.437", "dist": 0}, {"name": "Негродов Герман", "address": "г. Москва, ул. Маршала Катукова, д.13, к.2, кв.29", "dist": 0}, {"name": "Неизвестный (НО-22)", "address": "г. Москва, ул. Ангарская, д.26, к.1, кв.230", "dist": 0}, {"name": "Нехаев Александр", "address": "г. Москва, Ильменский пр-д, д.14, к.3, кв.601", "dist": 0}, {"name": "Нехаев Иван", "address": "г. Москва, ул. Дегунинская, д.10, к.1, кв.237", "dist": 0}, {"name": "Никитина Есения", "address": "г. Москва, Ильменский пр-д, д.14, к.3, кв.296", "dist": 0}, {"name": "Орленко Данила", "address": "г. Сергиев Посад, пгт. Богородское, д.17, кв.14", "dist": 0}, {"name": "Осташевская Аврора", "address": "г. Москва, ул. Дегунинская, д.10, к.1, кв.122", "dist": 0}, {"name": "Петров Григорий", "address": "г. Мытищи, д. Грибки, ул. Складская, д.9", "dist": 0}, {"name": "Петров Никита", "address": "г. Москва, ул. Дегунинская, д.7, кв.82", "dist": 0}, {"name": "Петрова Алиса", "address": "г. Москва, ул. Пяловская, д.8, кв.169", "dist": 0}, {"name": "Прибыткова Алиса", "address": "г. Москва, ул. Дубнинская, д.40А, к.4, кв.91", "dist": 0}, {"name": "Прохорова Алиса", "address": "г. Москва, Ильменский пр-д, д.14, к.3, кв.1452", "dist": 0}, {"name": "Разумов Александр", "address": "г. Москва, ул. Беломорская, д.18А, к.2, кв.103", "dist": 0}, {"name": "Ребрий Евгений", "address": "г. Москва, ул. Дегунинская, д.7, кв.49", "dist": 0}, {"name": "Савин Тимофей", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.494", "dist": 0}, {"name": "Семевич Алиса", "address": "г. Москва, Ильменский пр-д, д.14, к.1, кв.485", "dist": 0}, {"name": "Семчук Кристина", "address": "г. Москва, ул. Ангарская, д.67, к.3, кв.110", "dist": 0}, {"name": "Сергиенко Мирон", "address": "г. Москва, ш. Дмитровское, д.107, к.1, кв.456", "dist": 0}, {"name": "Сулейманова Ясмина", "address": "г. Москва, ул. Ангарская, д.67, к.3, кв.20", "dist": 0}, {"name": "Трифонов Артём", "address": "г. Москва, ул. Пяловская, д.10, кв.279", "dist": 0}, {"name": "Тухфетуллин Амир", "address": "г. Москва, ул. Дегунинская, д.9, к.1, кв.466", "dist": 0}, {"name": "Юдина София", "address": "г. Москва, ул. Лобненская, д.15, к.1, кв.409", "dist": 0}, {"name": "Яцкив Артём", "address": "г. Москва, ул. Дегунинская, д.7, кв.47", "dist": 0}];
+
+
+const DADATA_KEY='d065d9bbc5abd65bbe173c43fb3f71802e115614';
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+function cleanAddress(addr) {
+  let c = addr.replace(/\u00a0/g, ' ');
+  c = c.replace(/,(?=\S)/g, ', ');
+  c = c.replace(/\.(?=[а-яА-Я])/g, '. ');
+  
+  // Remove apartment
+  c = c.replace(/(?<=[,\s.])\s*(?:кв(?!артал)(?:артира)?|жил\.?\s*пом)\.?\s*[\.\s]*[\d\/_\-а-яА-Яa-zA-Z]*/gi, '');
+  c = c.replace(/,?\s*\d+\s*подъезд/gi, '');
+  c = c.replace(/,?\s*секция\s*\d+/gi, '');
+  
+  // Remove ЖК, КП, НП
+  c = c.replace(/,?\s*(?:ЖК|ж\\?к|КП|НП|нп)\s+[а-яА-ЯёЁ"«»\-\s]+,/gi, ',');
+  c = c.replace(/,?\s*(?:ЖК|ж\\?к|КП)\s+[а-яА-ЯёЁ"«»\-]+\s*,?/gi, ',');
+  
+  // Remove settlements
+  c = c.replace(/,?\s*(?:Поселение|посёлок\s+городского\s+типа|пос(?:ёлок|елок)?\.?\s*|п\.)\s*[а-яА-ЯёЁ]+\s*,?/gi, ',');
+  
+  // Remove village names
+  c = c.replace(/,?\s*нп\s+Деревня\s+[а-яА-ЯёЁ]+\s*,?/gi, ',');
+  c = c.replace(/,?\s*(?:д\.|дер\.)\s*[А-ЯЁ][а-яёА-ЯЁ\-]+\s*,/g, ',');
+  
+  // Remove districts
+  c = c.replace(/,?\s*[а-яА-ЯёЁ]+\s+р-н\s*,?/gi, ',');
+  c = c.replace(/,?\s*р-н[ауе]?\s+[а-яА-ЯёЁ\-]+\s*,?/gi, ',');
+  c = c.replace(/,?\s*(?:Северо-|Юго-)?(?:Восточный|Западный|Северный|Южный|Центральный)\s*(?:АО|адм\.?\s*округ)\s*,?/gi, ',');
+  c = c.replace(/,?\s*(?:округ\s+)?(?:ЗАО|ВАО|САО|ЮАО|СВАО|СЗАО|ЮЗАО|ЮВАО)\b\s*,?/gi, ',');
+  c = c.replace(/,?\s*вн\.\s*тер\.\s*г\.\s*/gi, ',');
+  
+  // Remove parentheses
+  c = c.replace(/\s*\([^)]+\)\s*/g, ' ');
+  
+  // Fix abbreviations
+  c = c.replace(/\bгор\.\s*/gi, 'г. ');
+  c = c.replace(/\bдомовл\.\s*/gi, 'д. ');
+  c = c.replace(/\bдвлд\.\s*/gi, 'д. ');
+  c = c.replace(/\bвлд\.\s*/gi, 'д. ');
+  c = c.replace(/\bКм\.\s*/gi, '');
+  
+  // "ул. Лазоревый пр." → "Лазоревый проезд"
+  c = c.replace(/\bул\.\s*([А-ЯЁ][а-яёА-ЯЁ\-\d]+)\s+пр\./g, '$1 проезд');
+  
+  // "ул. Рублевское шоссе" → "Рублевское шоссе"
+  c = c.replace(/\bул\.\s*([А-ЯЁ][а-яёА-ЯЁ\-]+\s+(?:шоссе|ш\.))/gi, '$1');
+  
+  // Remove highway km markers but keep highway name
+  c = c.replace(/(Киевское|МКАД|Калужское|Варшавское|Ленинградское)\s+(?:шоссе|ш\.)\s*[\d\-]+(?:-й)?\s*(?:км)?/gi, '$1 шоссе');
+  
+  // "Калужское ш., ул.Ясеневая" - remove highway, keep street
+  if (/(?:ш\.|шоссе)[,\s]+(?:ул\.|улица)/i.test(c)) {
+    c = c.replace(/^.*?(?:ш\.|шоссе)[,\s]+/i, '');
+  }
+  
+  // "Московская обл." - remove, keep rest
+  c = c.replace(/Московская\s+обл\.?,?\s*/gi, '');
+  
+  // Clean
+  c = c.replace(/,\s*,/g, ',').replace(/\s+/g, ' ').replace(/^[,\s]+|[,.\s]+$/g, '').trim();
+  return c;
+}
+
+function ensureCity(cleaned) {
+  if (/(?:москв|химки|мытищи|долгопрудн|балашиха|реутов|пушкино|щелков|красногорск|одинцов|заречье|коммунарка|павшин|зеленоград|троицк|сергиев|апрелевка|видное|лобня)/i.test(cleaned)) {
+    return cleaned;
+  }
+  return 'Москва, ' + cleaned;
+}
+
+async function callDadata(query) {
+  try {
+    const r = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Token ' + DADATA_KEY },
+      body: JSON.stringify({ query: query, count: 1 })
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (d.suggestions && d.suggestions.length > 0) {
+      const s = d.suggestions[0].data;
+      if (s.geo_lat && s.geo_lon) {
+        return { coords: [parseFloat(s.geo_lat), parseFloat(s.geo_lon)], qc: s.qc_geo || 0, resolved: d.suggestions[0].value };
+      }
+    }
+  } catch(e) { console.error('DaData error:', query, e); }
+  return null;
+}
+
+async function geocode(address) {
+  const cleaned = cleanAddress(address);
+  let result = await callDadata(cleaned);
+  if (result) return result;
+
+  const withCity = ensureCity(cleaned);
+  if (withCity !== cleaned) {
+    result = await callDadata(withCity);
+    if (result) return result;
+  }
+
+  // Strip all abbreviations
+  let simple = cleaned.replace(/\b(?:ул|д|к|стр|корп|пр-д|ш|ал|пр|мкр|обл|тер|мкрн|б-р|пер|просп|пр-кт)\.\s*/gi, ' ');
+  simple = simple.replace(/\b(?:улица|дом|корпус|строение|проезд|шоссе|аллея|проспект|бульвар|тупик|переулок)\b/gi, ' ');
+  simple = simple.replace(/\s+/g, ' ').replace(/^[,\s]+|[,.\s]+$/g, '').trim();
+  simple = ensureCity(simple);
+  if (simple !== cleaned && simple !== withCity) {
+    result = await callDadata(simple);
+    if (result) return result;
+  }
+
+  return null;
+}
+
+function getCacheKey() { return 'geo_v10_' + BRANCH_KEY; }
+function loadCache() { try { const c = localStorage.getItem(getCacheKey()); return c ? JSON.parse(c) : {}; } catch(e) { return {}; } }
+function saveCache(cache) { try { localStorage.setItem(getCacheKey(), JSON.stringify(cache)); } catch(e) {} }
+
+function haversine(c1,c2) {
+  const R=6371, toR=Math.PI/180;
+  const dLat=(c2[0]-c1[0])*toR, dLon=(c2[1]-c1[1])*toR;
+  const a=Math.sin(dLat/2)**2 + Math.cos(c1[0]*toR)*Math.cos(c2[0]*toR)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function distClass(d) { return d<=3?'dn':d<=15?'dm':'df'; }
+function distColor(d) { return d<=2?'#2E7D32':d<=5?'#43A047':d<=10?'#FB8C00':d<=15?'#E65100':'#C62828'; }
+function createIcon(color) {
+  return L.divIcon({ className:'', html:'<div style="width:14px;height:14px;background:'+color+';border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>', iconSize:[14,14],iconAnchor:[7,7] });
+}
+
+
+function updateAnalytics(dists) {
+  const n=dists.length; if(!n) return;
+  dists.sort((a,b)=>a-b);
+  const med=n%2?dists[Math.floor(n/2)]:(dists[n/2-1]+dists[n/2])/2;
+  const p80=dists[Math.min(Math.floor(n*.8),n-1)];
+  const mx=dists[n-1];
+  const le3=dists.filter(d=>d<=3).length,le5=dists.filter(d=>d<=5).length,le10=dists.filter(d=>d<=10).length;
+  document.getElementById('a-median').textContent=med.toFixed(1);
+  document.getElementById('a-p80').textContent=p80.toFixed(1);
+  document.getElementById('a-max').textContent=mx.toFixed(1);
+  document.getElementById('n3').textContent=le3;document.getElementById('n5').textContent=le5;document.getElementById('n10').textContent=le10;
+  document.getElementById('bar3').style.width=Math.round(le3/n*100)+'%';
+  document.getElementById('bar5').style.width=Math.round(le5/n*100)+'%';
+  document.getElementById('bar10').style.width=Math.round(le10/n*100)+'%';
+}
+
+(async function() {
+  const ls=document.getElementById('ls'),pb=document.getElementById('pbar'),ld=document.getElementById('loading');
+  const container=document.getElementById('addrContainer');
+  const cache=loadCache();
+
+  if (Object.keys(cache).length>0) ls.textContent='Кеш: '+Object.keys(cache).length+' адресов...';
+
+  const map=L.map('map').setView(BASE_COORDS,13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+
+  L.marker(BASE_COORDS,{icon:L.divIcon({className:'',html:'<div style="width:28px;height:28px;background:#C62828;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center"><div style="width:8px;height:8px;background:#fff;border-radius:50%"></div></div>',iconSize:[28,28],iconAnchor:[14,14]}),zIndexOffset:1000}).addTo(map).bindPopup('<b>🏫 Дегунино</b><br>Москва, Дегунинская ул., д. 9А, к. 2');
+
+  const addrGroups={};
+  ADDRESSES.forEach((item,i) => {
+    const div=document.createElement('div');div.className='ai';div.id='a-'+i;
+    const dTxt=item.dist>0?(item.dist.toFixed(1)+' км'):'—';
+    const dCls=item.dist>0?distClass(item.dist):'dm';
+    div.innerHTML='<div style="flex:1;min-width:0"><div class="an">'+item.name+'</div><div class="at" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+item.address+'</div></div><div class="ad '+dCls+'" id="d-'+i+'">'+dTxt+'</div>';
+    container.appendChild(div);
+    const ck=cleanAddress(item.address);
+    if(!addrGroups[ck])addrGroups[ck]={addr:ck,count:0};
+    addrGroups[ck].count++;
+  });
+
+  const topC=document.getElementById('topAddrs');
+  Object.values(addrGroups).filter(g=>g.count>1).sort((a,b)=>b.count-a.count).slice(0,5).forEach(t=>{
+    const d=document.createElement('div');d.className='ti';d.innerHTML='<span class="tc">'+t.count+'</span>'+t.addr;topC.appendChild(d);
+  });
+
+  let msk=0,mo=0;
+  ADDRESSES.forEach(a=>{if(/(московская|мытищи|долгопрудн|балашиха|реутов|пушкино|щелков|химки|красногорск|одинцов|люберц|обл\.|заречье|павшин|зеленоград|троицк|сергиев|апрелевка)/i.test(a.address))mo++;else msk++;});
+  if(msk+mo>0){
+    const mP=Math.round(msk/(msk+mo)*100);
+    document.getElementById('geoBar').style.display='block';
+    document.getElementById('gm').style.width=Math.max(mP,5)+'%';document.getElementById('gm').textContent='Москва '+mP+'%';
+    document.getElementById('go').style.width=Math.max(100-mP,5)+'%';document.getElementById('go').textContent='МО '+(100-mP)+'%';
+    document.getElementById('glm').textContent='Москва: '+msk;document.getElementById('glo').textContent='МО: '+mo;
+  }
+
+  const total=ADDRESSES.length;
+  let found=0,failed=0,fromCache=0;
+  const realDists=[],allCoords=[BASE_COORDS];
+
+  for(let i=0;i<total;i++){
+    const item=ADDRESSES[i];
+    const cacheKey=cleanAddress(item.address);
+    let result=cache[cacheKey]||null;
+    if(result){fromCache++;}
+    else{
+      result=await geocode(item.address);
+      if(result)cache[cacheKey]=result;
+      await delay(300);
+    }
+
+    if(result&&result.coords){
+      const coords=result.coords;
+      const dist=haversine(BASE_COORDS,coords);
+      const rd=Math.round(dist*10)/10;
+      const ud=(item.dist>0)?item.dist:rd;
+      realDists.push(ud);allCoords.push(coords);
+
+      if(item.dist===0){
+        const dEl=document.getElementById('d-'+i);
+        dEl.textContent=rd.toFixed(1)+' км';dEl.className='ad '+distClass(rd);item.dist=rd;
+      }
+
+      const mk=L.marker(coords,{icon:createIcon(distColor(ud))}).addTo(map)
+        .bindPopup('<b>'+item.name+'</b><br>'+item.address+'<br>📏 '+ud.toFixed(1)+' км');
+      found++;
+
+      const div=document.getElementById('a-'+i);
+      (function(c,m,d){d.onclick=function(){map.setView(c,16,{animate:true});m.openPopup();document.querySelectorAll('.ai').forEach(el=>el.classList.remove('active'));d.classList.add('active');};})
+      (coords,mk,div);
+    }else{
+      failed++;
+      document.getElementById('a-'+i).innerHTML+='<span class="eb">⚠ не найден</span>';
+      console.warn('NOT FOUND:',item.address,'→',cacheKey);
+    }
+
+    const p=i+1;
+    ls.textContent=p+'/'+total+' · ✅'+found+(fromCache?' · 💾'+fromCache:'')+(failed?' · ❌'+failed:'');
+    pb.style.width=(p/total*100)+'%';
+    if(p%15===0)saveCache(cache);
+  }
+
+  saveCache(cache);
+  updateAnalytics(realDists);
+  ls.textContent='✅ '+found+'/'+total+(fromCache?' (💾'+fromCache+')':'')+(failed?' · ❌'+failed:'');
+  setTimeout(()=>ld.style.display='none',1500);
+
+  if(allCoords.length>1){
+    map.fitBounds(L.latLngBounds(allCoords.map(c=>L.latLng(c[0],c[1]))),{padding:[30,30]});
+  }
+})();
+</script>
+</body></html>
